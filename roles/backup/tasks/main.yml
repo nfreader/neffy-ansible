@@ -1,0 +1,77 @@
+---
+- name: Get pip installer
+  get_url:
+    url=https://bootstrap.pypa.io/get-pip.py
+    dest=/root/get-pip.py
+  tags: core-dump
+
+- name: Install pip
+  command: /usr/bin/python /root/get-pip.py
+
+- name: Install aws cli
+  command: /usr/local/bin/pip install awscli
+
+- name: Create config directory
+  file:
+    path=/root/.aws
+    state=directory
+
+#Copy config
+- name: Copy aws config
+  template:
+    src=aws.j2
+    dest=/root/.aws/credentials
+  tags: core-dump
+
+#Create test file
+- name: Create a test file
+  file:
+    path=/root/{{inventory_hostname}}.test
+    state=touch
+  tags: core-dump
+
+
+- name: Attempt to place test file
+  command: aws s3 cp /root/{{inventory_hostname}}.test s3://{{backup_bucket}}/{{inventory_hostname}}/
+  tags: core-dump
+
+- name: Copy core dump shell script
+  template:
+    src=core-dump.sh.j2
+    dest=/root/core-dump.sh
+    mode=0700
+  tags: core-dump
+
+#Cron it
+- name: Add cronjob for core-dump
+  cron:
+    name="core dump"
+    minute="0"
+    hour="0"
+    job="./core-dump.sh"
+  tags: core-dump
+
+- name: Copy Slack notification shell script
+  template:
+    src=dump-notify-slack.sh.j2
+    dest=/root/notify-slack.sh
+    mode=0700
+  tags: core-dump
+  when: coredump_slack is defined
+
+- name: Add Slack notification invocation to core-dump.sh
+  lineinfile:
+    dest=/root/core-dump.sh
+    line='/bin/bash /root/notify-slack.sh'
+    state=present
+  tags: core-dump
+  when: coredump_slack is defined
+
+- name: Test Slack notifications
+  command: /root/notify-slack.sh
+  when: coredump_slack is defined
+  tags: core-dump
+
+- name: Test backups
+  command: /root/core-dump.sh
+  tags: core-dump

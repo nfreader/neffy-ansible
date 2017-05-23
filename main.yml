@@ -1,0 +1,14 @@
+---
+# Set up a new server as a main server that can host a series of websites
+# under it. 
+
+- hosts: core
+  roles:
+    - main 
+    - nginx
+    - mysql
+    - harden
+    - backup
+  vars_files: 
+    - group_vars/main
+      

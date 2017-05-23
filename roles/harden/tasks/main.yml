@@ -1,0 +1,12 @@
+---
+
+# Ansible used harden! Ansible's defense rose!
+
+- name: Disallow password authentication
+  lineinfile:
+    dest=/etc/ssh/sshd_config
+    regexp="^PasswordAuthentication"
+    line="PasswordAuthentication no"
+    state=present
+  tags: harden
+

@@ -1,0 +1,8 @@
+---
+# Set up a new nginx site on an existing server
+
+- hosts: site
+  roles:
+    - site
+    - letsencrypt
+  serial: 1

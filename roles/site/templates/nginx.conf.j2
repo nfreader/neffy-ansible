@@ -1,0 +1,46 @@
+server {
+  listen          80;
+  server_name     www.{{ inventory_hostname}};
+  rewrite ^(.*)   http://{{ inventory_hostname}}$1 permanent;
+}
+
+server {
+  listen 80;
+  listen 443 ssl;
+
+  root /usr/share/nginx/{{ inventory_hostname }};
+  index index.html index.htm index.php;
+
+  client_max_body_size 4M;
+
+  server_name {{ inventory_hostname }};
+
+  location / {
+    try_files $uri $uri/ /wordpress/index.php?$args /index.php?$args;
+  }
+
+  error_page 404 /40x.html;
+  location = /40x.html {
+    root /usr/share/nginx/{{ inventory_hostname }};
+  }
+  error_page 500 502 503 504 /50x.html;
+  location = /50x.html {
+    root /usr/share/nginx/{{ inventory_hostname }};
+  }
+
+  location ~* .php$ {
+    fastcgi_read_timeout 150;
+    include snippets/fastcgi-php.conf;
+    fastcgi_pass unix:/run/php/php7.0-fpm.sock;
+  }
+  
+  access_log /var/log/nginx/{{inventory_hostname}}-access.log;
+  error_log /var/log/nginx/{{inventory_hostname}}-error.log warn;
+
+  include global/restrictions.conf;
+  #include global/ssl.conf;
+
+  #ssl_certificate
+  #key_cert
+
+}

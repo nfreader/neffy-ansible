@@ -1,0 +1,13 @@
+#!/bin/sh
+printf "\n"
+printf "@═════════════════════════════════════════@\n"
+printf "║                                         ║\n"
+printf "║       THIS IS A PRODUCTION SYSTEM       ║\n"
+printf "║          MANAGED WITH ANSIBLE           ║\n"
+printf "║                                         ║\n"
+printf "║  If you do not know what you are doing  ║\n"
+printf "║             please log out.             ║\n"
+printf "║                                         ║\n"
+printf "║                                         ║\n"
+printf "@═════════════════════════════════════════@\n"
+printf "\n"

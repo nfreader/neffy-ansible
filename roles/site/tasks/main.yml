@@ -1,0 +1,98 @@
+---
+- name: Remove default nginx config symlink
+  file:
+    path=/etc/nginx/sites-enabled/default
+    state=absent
+    force=yes
+  tags: site
+  become: true
+
+- name: Create new domain docroot
+  file:
+    path=/usr/share/nginx/{{inventory_hostname}}
+    state=directory
+    owner=www-data
+    group=www-data
+    mode="u+rwx,g+rwx,o=rx"
+  tags: site
+  become: true
+
+- name: Copy domain configuration
+  template:
+    src=nginx.conf.j2
+    dest=/etc/nginx/sites-available/{{inventory_hostname}}
+  tags: site
+  become: true
+
+- name: Enable domain configuration
+  file:
+    src=/etc/nginx/sites-available/{{inventory_hostname}}
+    dest=/etc/nginx/sites-enabled/{{inventory_hostname}}
+    state=link
+    force=yes
+  tags: site
+  become: true
+
+- name: CGI Fix pathinfo
+  lineinfile:
+    dest=/etc/php/7.0/fpm/php.ini
+    regexp=";cgi.fix_pathinfo=1"
+    line="cgi.fix_pathinfo=0"
+    state=present
+  tags: site
+  become: true
+  notify:
+    - restart php-fpm
+    - restart nginx
+
+- name: Check if domain user exists
+  stat: path=/home/{{ inventory_hostname }}
+  register: domainuser
+  tags: site
+
+- name: Create domain user
+  user:
+    name={{inventory_hostname}}
+    group=www-data
+    generate_ssh_key=yes
+    createhome=yes
+    ssh_key_bits=2048
+    state=present
+  tags: site
+  when: domainuser.stat.exists == false
+  become: true
+
+- name: Acquire user SSH pubkey
+  fetch:
+    src=/home/{{ inventory_hostname }}/.ssh/id_rsa.pub
+    dest=credentials/{{inventory_hostname}}/id_rsa.pub
+    flat=yes
+  tags: site
+
+- name: Add domain user SSH keys from ansible host
+  authorized_key:
+    user={{ inventory_hostname }}
+    key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+  tags: site
+
+#Copy SSH keys from remote if a URL is set
+- name: Add domain user SSH keys
+  authorized_key:
+    user={{ inventory_hostname }}
+    key={{ keys_url }}
+  tags: site
+  when: keys_url is defined
+
+#Create a shortcut to the docroot
+- name: Link www
+  file:
+    dest=/home/{{inventory_hostname}}/www
+    src=/usr/share/nginx
+    state=link
+    force=yes
+    owner={{inventory_hostname}}
+    group=www-data
+    mode="u+rwx,g+rwx,o=rx"
+  tags: site
+
+

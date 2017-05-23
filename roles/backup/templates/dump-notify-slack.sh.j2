@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Sends a simple Slack notification to the specified URL.
+
+curl -X POST \
+     --data-urlencode 'payload={"text":"*{{ inventory_hostname }}* core dump complete"}' \
+     {{coredump_slack}}

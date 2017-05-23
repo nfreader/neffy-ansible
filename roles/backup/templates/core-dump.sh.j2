@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#This shell script will dump our nginx docroot and mysql DBs to a tar and 
+#stick it all in an S3 bucket.
+
+BUCKET={{ backup_bucket }}
+DATE=$(date -d "today" +"%Y%m%d%H%M");
+mkdir ~/backup;
+mysqldump --all-databases -n > ~/backup/$DATE-sql-dump.sql;
+tar -z -c -f ~/backup/$DATE-file-dump.tar --exclude-vcs-ignores --exclude-vcs /usr/share/nginx;
+tar -zcf ~/backup/$DATE-core-dump.tar ~/backup;
+aws s3 cp ~/backup/$DATE-core-dump.tar  s3://$BUCKET/{{ inventory_hostname }}/$DATE-core-dump.tar;
+rm -rf ~/backup/*

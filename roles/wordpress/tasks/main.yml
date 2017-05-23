@@ -1,0 +1,35 @@
+---
+- name: Create WP directory
+  file: 
+    path=/usr/share/nginx/{{inventory_hostname}}/wordpress
+    state=directory
+    group=www-data
+    owner={{inventory_hostname}}
+    mode="u+rwx,g+rwx,o=rx"
+  tags: wordpress
+
+- name: Download WP core files
+  command: /usr/bin/wp core download chdir=/usr/share/nginx/{{inventory_hostname}}/wordpress creates=/usr/share/nginx/{{inventory_hostname}}/wordpress/wp-config-sample.php
+  become: true
+  become_user: "{{inventory_hostname}}"
+  tags: wordpress
+
+- name: Create WP database
+  mysql_db:
+    name=wp-{{ inventory_hostname_short[0:61] }}
+    state=present
+  tags: wordpress
+
+- name: Create WP user
+  mysql_user:
+    name=wp-{{ inventory_hostname_short[0:13] }}
+    password="{{ lookup('password', 'credentials/' + inventory_hostname + '/mysqlpassword-wp length=20 chars=ascii_letters,digits,hexdigits,punctuation') }}"
+    state=present
+    priv=wp-{{ inventory_hostname_short[0:61] }}.*:ALL
+  tags: wordpress
+
+- name: Configure Wordpress
+  command: /usr/bin/wp core config --dbname=wp-{{ inventory_hostname_short[0:61] }} --dbuser=wp-{{ inventory_hostname_short[0:13] }} --dbpass="{{ lookup('password', 'credentials/' + inventory_hostname + '/mysqlpassword-wp length=20 chars=ascii_letters,digits,hexdigits,punctuation') }}" chdir=/usr/share/nginx/{{inventory_hostname}}/wordpress creates=/usr/share/nginx/{{inventory_hostname}}/wordpress/wp-config.php
+  become: true
+  become_user: "{{inventory_hostname}}"
+  tags: wordpress

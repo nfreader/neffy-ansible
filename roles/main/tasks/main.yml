@@ -1,0 +1,82 @@
+---
+
+# Core server configuration
+# Installs: core packages, nginx, php, and sets up managed system notices
+
+- name: Update Apt
+  apt: update_cache=yes
+  tags: core
+
+- name: Install core packages
+  apt: pkg={{ item }} state=latest
+  with_items:
+    - zip
+    - unzip
+    - git
+    - curl
+    - certbot
+
+# - name: Check if apache is installed
+#   stat: path=/etc/init.d/apache2
+
+- name: Remove apache
+  apt: pkg=apache2 state=absent purge=yes force=yes
+  tags: core
+
+- name: Install nginx
+  apt: pkg=nginx state=latest
+  tags: core
+
+- name: Install php
+  apt: pkg=php state=latest
+  tags: core
+
+- name: Install PHP packages
+  apt: pkg={{ item }} state=latest
+  with_items:
+    - php-mysql
+    - php-gd
+    - php-fpm
+
+- name: Remove old MOTD header
+  file:
+    path=/etc/update-motd.d/00-header
+    state=absent
+  tags: core
+
+- name: Copy MOTD
+  copy:
+    src=00-motd-ansible
+    dest=/etc/update-motd.d/00-motd-ansible
+    mode=755
+  tags: core
+
+- name: Copy .bashrc
+  copy:
+    src=.bashrc
+    dest=/root/.bash_profile
+    mode=0600
+  tags: core
+
+- name: Generate secure dhparam
+  command: openssl dhparam -out dhparam.pem 4096
+  args:
+    chdir: /etc/ssl/certs
+    creates: /etc/ssl/certs/dhparam.pem
+  tags: letsencrypt
+  async: 10000
+  poll: 10
+
+- name: Add PATH to cron env
+  cron:
+    env=yes
+    name=PATH
+    value="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+
+- name: Add cronjob for renewal
+  cron:
+    name="ssl renew"
+    minute="0"
+    hour="1"
+    job="certbot renew --pre-hook 'service nginx stop' --post-hook 'service nginx start'"
+  tags: letsencrypt

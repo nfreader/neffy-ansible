@@ -1,0 +1,7 @@
+---
+# Set up wp-cli on an existing site
+
+- hosts: wp
+  roles:
+    - sbaerlocher.wp-cli
+    - wordpress

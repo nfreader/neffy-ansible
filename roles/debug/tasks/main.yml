@@ -1,0 +1,2 @@
+---
+- debug: var="{{ lookup('password', 'credentials/' + inventory_hostname + '/mysqlpassword length=20 chars=ascii_letters,digits,hexdigits,punctuation') }}"

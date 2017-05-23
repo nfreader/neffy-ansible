@@ -1,0 +1,25 @@
+---
+
+- name: Create additional nginx config directory
+  file:
+    path=/etc/nginx/global
+    state=directory
+  tags: nginx
+
+- name: Copy nginx restrictions.conf
+  copy: 
+    src=restrictions.conf
+    dest=/etc/nginx/global/restrictions.conf
+  tags: nginx
+
+- name: Create new nginx docroot
+  file: 
+    path=/usr/share/nginx
+    state=directory
+    owner=root
+    group=www-data
+    mode="u+rwx,g+rwx,o=rx"
+  tags: nginx
+  notify: restart nginx
+
+

@@ -1,0 +1,6 @@
+group_vars/*
+credentials/*
+inventory*
+.DS_Store
+tmp/*
+*.retry

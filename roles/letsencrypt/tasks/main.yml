@@ -1,0 +1,60 @@
+---
+- name: Copy nginx ssl.conf
+  copy:
+    src=ssl.conf
+    dest=/etc/nginx/global/ssl.conf
+  tags: letsencrypt
+
+- name: Stop nginx
+  service:
+    name=nginx
+    state=stopped
+
+- name: Get letsencrypt certificates
+  command: /usr/bin/certbot certonly --standalone -d {{inventory_hostname}} -m {{cert_email}} --agree-tos -n
+
+- name: Uncomment SSL certificate file
+  replace:
+    dest=/etc/nginx/sites-enabled/{{inventory_hostname}}
+    regexp='#ssl_certificate'
+    replace='ssl_certificate /etc/letsencrypt/live/{{inventory_hostname}}/fullchain.pem;'
+    #state="present"
+  tags: letsencrypt
+
+- name: Uncomment SSL certificate key file
+  replace:
+    dest=/etc/nginx/sites-enabled/{{inventory_hostname}}
+    regexp='#key_cert'
+    replace='ssl_certificate_key /etc/letsencrypt/live/{{inventory_hostname}}/privkey.pem;'
+    #state="present"
+  tags: letsencrypt
+
+# - name: Disable http default
+#   replace:
+#     dest=/etc/nginx/sites-enabled/{{inventory_hostname}}
+#     regexp='listen 80 default;'
+#     replace='listen 80;'
+#     #state="present"
+#   tags: letsencrypt
+
+# - name: Make SSL default
+#   replace:
+#     dest=/etc/nginx/sites-enabled/{{inventory_hostname}}
+#     regexp='listen 443 ssl;'
+#     replace='listen 443 default ssl;'
+#     #state="present"
+#   tags: letsencrypt
+
+- name: Uncomment ssl conf
+  replace:
+    dest=/etc/nginx/sites-enabled/{{inventory_hostname}}
+    regexp='#include global/ssl.conf;'
+    replace='include global/ssl.conf;'
+    #state="present"
+  tags: letsencrypt
+
+- name: Start nginx
+  service:
+    name=nginx
+    state=started
+  
